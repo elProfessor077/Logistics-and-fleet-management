@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Warehouses & Distribution Centers{% endblock %}
+{% block meta_description %}Explore LogiCraft storage network facilities and distribution centers. Monitor storage capacity utilization, active inventory items, and regional supply nodes.{% endblock %}
+{% block meta_keywords %}warehouse management, distribution centers, supply chain storage, inventory logistics, regional hubs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-warehouse" style="color: var(--accent-teal); margin-right: 8px;"></i> Warehouses</h1>
+    <p>Distribution centers and storage facilities</p>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+    <form method="get" style="display: flex; gap: 12px; align-items: center; width: 100%;">
+        <select name="city" class="form-control" onchange="this.form.submit()">
+            <option value="">All Cities</option>
+            {% for city in cities %}
+            <option value="{{ city }}" {% if city_filter == city %}selected{% endif %}>{{ city }}</option>
+            {% endfor %}
+        </select>
+        {% if city_filter %}
+        <a href="{% url 'warehouse:warehouse_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Warehouse Grid -->
+<div class="grid-3">
+    {% for warehouse in warehouses %}
+    <a href="{% url 'warehouse:warehouse_detail' warehouse.pk %}" style="text-decoration: none;">
+        <div class="card" style="height: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--accent-blue); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">{{ warehouse.code }}</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; margin-top: 4px; color: var(--text-primary);">{{ warehouse.name }}</div>
+                    <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+                        <i class="fas fa-location-dot" style="margin-right: 4px;"></i>{{ warehouse.city }}{% if warehouse.state %}, {{ warehouse.state }}{% endif %}
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 1.5rem; font-weight: 800; color: {% if warehouse.utilization_percent > 90 %}var(--danger){% elif warehouse.utilization_percent > 70 %}var(--warning){% else %}var(--accent-blue){% endif %};">{{ warehouse.utilization_percent }}%</div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted);">UTILIZATION</div>
+                </div>
+            </div>
+
+            <div class="utilization-bar" style="margin-bottom: 16px;">
+                <div class="utilization-fill {% if warehouse.utilization_percent > 90 %}danger{% elif warehouse.utilization_percent > 70 %}warning{% endif %}" style="width: {{ warehouse.utilization_percent }}%;"></div>
+            </div>
+
+            <div class="warehouse-stats">
+                <div class="warehouse-stat">
+                    <div class="warehouse-stat-value">{{ warehouse.capacity|floatformat:0 }}</div>
+                    <div class="warehouse-stat-label">Capacity</div>
+                </div>
+                <div class="warehouse-stat">
+                    <div class="warehouse-stat-value">{{ warehouse.current_utilization|floatformat:0 }}</div>
+                    <div class="warehouse-stat-label">Used</div>
+                </div>
+                <div class="warehouse-stat">
+                    <div class="warehouse-stat-value">{{ warehouse.available_capacity|floatformat:0 }}</div>
+                    <div class="warehouse-stat-label">Available</div>
+                </div>
+            </div>
+        </div>
+    </a>
+    {% empty %}
+    <div class="card" style="grid-column: span 3;">
+        <div class="empty-state">
+            <i class="fas fa-warehouse"></i>
+            <p>No warehouses found</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

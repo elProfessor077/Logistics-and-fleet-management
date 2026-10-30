@@ -1,0 +1,330 @@
+{% load static %}
+{% load core_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <!-- Primary SEO Meta Tags -->
+    <title>{% block title %}Dashboard{% endblock %} — LogiCraft Fleet & Logistics</title>
+    <meta name="title" content="{% block meta_title %}LogiCraft — Enterprise Fleet &amp; Logistics Management Platform{% endblock %}">
+    <meta name="description" content="{% block meta_description %}LogiCraft — Real-time Fleet GPS Tracking, Intelligent Warehouse Inventory, Multi-Modal Shipment Logistics, and Public Transit Operations.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}logistics management, fleet tracking, gps vehicle tracking, warehouse management, shipment dispatch, supply chain optimization, route planning, transit ticketing{% endblock %}">
+    <meta name="author" content="LogiCraft Systems">
+    <meta name="robots" content="{% block meta_robots %}index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1{% endblock %}">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}">
+
+    <!-- Mobile & PWA Theme -->
+    <meta name="theme-color" content="#1a4d2e">
+    <meta name="application-name" content="LogiCraft">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LogiCraft">
+    
+    <!-- Favicon & Icons -->
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/favicon.svg' %}">
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:site_name" content="LogiCraft Enterprise Logistics">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="{% block og_title %}LogiCraft — Enterprise Fleet &amp; Logistics Management Platform{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Real-time fleet tracking, intelligent warehouse management, shipment analytics, and transit scheduling in one integrated platform.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'img/logicraft-preview.svg' %}{% endblock %}">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ request.build_absolute_uri }}">
+    <meta name="twitter:title" content="{% block twitter_title %}LogiCraft — Enterprise Fleet &amp; Logistics Management Platform{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Real-time fleet tracking, intelligent warehouse management, shipment analytics, and transit scheduling in one integrated platform.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'img/logicraft-preview.svg' %}{% endblock %}">
+
+    <!-- Structured Data (JSON-LD Schema) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "@id": "{{ request.scheme }}://{{ request.get_host }}/#webapp",
+          "name": "LogiCraft Fleet & Logistics Platform",
+          "url": "{{ request.scheme }}://{{ request.get_host }}/",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "All modern browsers",
+          "description": "Enterprise cloud solution for vehicle fleet GPS telematics, automated warehouse logistics, multi-modal parcel dispatch tracking, and transit line scheduling.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "featureList": [
+            "Live Interactive GPS Fleet Map",
+            "Real-time Vehicle Telematics & Driver Status",
+            "Warehouse Stock and Inventory Low-Stock Alerts",
+            "Public Live Shipment Parcel Tracking",
+            "Public Transit Line Schedules and Ticket Booking"
+          ]
+        },
+        {
+          "@type": "Organization",
+          "@id": "{{ request.scheme }}://{{ request.get_host }}/#organization",
+          "name": "LogiCraft Systems",
+          "url": "{{ request.scheme }}://{{ request.get_host }}/",
+          "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'img/favicon.svg' %}"
+        }
+      ]
+    }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Mobile Sidebar Toggle -->
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+    <div class="layout">
+        <!-- ===== Sidebar ===== -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="{% url 'core:dashboard' %}" class="sidebar-logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-truck-fast"></i>
+                    </div>
+                    <div>
+                        <span class="logo-text">LogiCraft</span>
+                        <span class="logo-sub">Fleet & Logistics</span>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Navigation -->
+            <nav>
+                <div class="nav-section">
+                    <div class="nav-section-title">Overview</div>
+                    <ul class="nav-items">
+                        <li class="nav-item">
+                            <a href="{% url 'core:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                                <i class="fas fa-chart-pie"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Fleet Management</div>
+                    <ul class="nav-items">
+                        <li class="nav-item">
+                            <a href="{% url 'fleet:fleet_list' %}" class="{% if request.resolver_match.app_name == 'fleet' and request.resolver_match.url_name == 'fleet_list' %}active{% endif %}">
+                                <i class="fas fa-truck"></i>
+                                Vehicles
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'fleet:fleet_map' %}" class="{% if request.resolver_match.url_name == 'fleet_map' %}active{% endif %}">
+                                <i class="fas fa-map-marked-alt"></i>
+                                Fleet Map
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'fleet:driver_list' %}" class="{% if request.resolver_match.url_name == 'driver_list' %}active{% endif %}">
+                                <i class="fas fa-id-card"></i>
+                                Drivers
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Warehousing</div>
+                    <ul class="nav-items">
+                        <li class="nav-item">
+                            <a href="{% url 'warehouse:warehouse_list' %}" class="{% if request.resolver_match.app_name == 'warehouse' %}active{% endif %}">
+                                <i class="fas fa-warehouse"></i>
+                                Warehouses
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Shipments</div>
+                    <ul class="nav-items">
+                        <li class="nav-item">
+                            <a href="{% url 'shipments:shipment_list' %}" class="{% if request.resolver_match.app_name == 'shipments' and request.resolver_match.url_name == 'shipment_list' %}active{% endif %}">
+                                <i class="fas fa-boxes-stacked"></i>
+                                All Shipments
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'shipments:create_shipment' %}" class="{% if request.resolver_match.url_name == 'create_shipment' %}active{% endif %}">
+                                <i class="fas fa-plus-circle"></i>
+                                New Shipment
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'shipments:track_shipment' %}" class="{% if request.resolver_match.url_name == 'track_shipment' %}active{% endif %}">
+                                <i class="fas fa-search-location"></i>
+                                Track Shipment
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Public Transport</div>
+                    <ul class="nav-items">
+                        <li class="nav-item">
+                            <a href="{% url 'transport:line_list' %}" class="{% if request.resolver_match.app_name == 'transport' and request.resolver_match.url_name == 'line_list' %}active{% endif %}">
+                                <i class="fas fa-route"></i>
+                                Transit Lines
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'transport:book_ticket' %}" class="{% if request.resolver_match.url_name == 'book_ticket' %}active{% endif %}">
+                                <i class="fas fa-ticket"></i>
+                                Book Ticket
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'transport:ticket_list' %}" class="{% if request.resolver_match.url_name == 'ticket_list' %}active{% endif %}">
+                                <i class="fas fa-receipt"></i>
+                                Tickets
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Sidebar Footer: Authentication & User Profile -->
+            <div class="sidebar-auth-section" style="margin-top: auto; padding: 18px 20px; border-top: 1px solid var(--border-color); background: rgba(0, 0, 0, 0.15);">
+                {% if user.is_authenticated %}
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <a href="{% url 'profile' %}" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; min-width: 0; flex: 1;">
+                        <div style="width: 36px; height: 36px; border-radius: 50%; background: var(--gradient-primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 0 10px rgba(34, 197, 94, 0.3);">
+                            <i class="fas fa-user-check" style="color: white; font-size: 0.85rem;"></i>
+                        </div>
+                        <div style="min-width: 0; overflow: hidden;">
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                {{ user.get_full_name|default:user.username }}
+                            </div>
+                            <div style="font-size: 0.72rem; color: var(--accent-blue); font-weight: 600;">
+                                {% if user.is_superuser %}Admin{% elif user.is_staff %}Staff{% else %}Operator{% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    <a href="{% url 'logout' %}" title="Sign Out" style="width: 34px; height: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.25); color: #fca5a5; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: all 0.2s ease;">
+                        <i class="fas fa-arrow-right-from-bracket" style="font-size: 0.85rem;"></i>
+                    </a>
+                </div>
+                {% else %}
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                        <div style="width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 255, 255, 0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                            <i class="fas fa-user-slash" style="color: var(--text-muted); font-size: 0.85rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Guest Visitor</div>
+                            <div style="font-size: 0.72rem; color: var(--text-muted);">Read-only access</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <a href="{% url 'login' %}" class="btn btn-primary btn-sm" style="flex: 1; justify-content: center; font-size: 0.8rem; padding: 6px 12px; text-decoration: none; border-radius: 8px;">
+                            <i class="fas fa-right-to-bracket"></i> Sign In
+                        </a>
+                        <a href="{% url 'register' %}" class="btn btn-secondary btn-sm" style="flex: 1; justify-content: center; font-size: 0.8rem; padding: 6px 12px; text-decoration: none; border-radius: 8px;">
+                            <i class="fas fa-user-plus"></i> Join
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </aside>
+
+        <!-- ===== Main Content ===== -->
+        <main class="main-content">
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="message message-{{ message.tags }}">
+                    <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+
+            <!-- App Semantic Footer for SEO & Quick Navigation -->
+            <footer class="app-footer" role="contentinfo">
+                <div class="footer-inner">
+                    <div class="footer-left">
+                        <i class="fas fa-truck-fast" style="color: var(--accent-blue); margin-right: 6px;"></i>
+                        <strong>LogiCraft</strong> &copy; {% now "Y" %} — Intelligent Fleet &amp; Logistics Management System. All rights reserved.
+                    </div>
+                    <nav class="footer-nav" aria-label="Footer Quick Links">
+                        <a href="{% url 'core:dashboard' %}">Dashboard</a>
+                        <a href="{% url 'fleet:fleet_map' %}">Live Fleet GPS</a>
+                        <a href="{% url 'shipments:track_shipment' %}">Track Parcel</a>
+                        <a href="{% url 'transport:line_list' %}">Transit Lines</a>
+                        <a href="{% url 'core:sitemap_xml' %}" target="_blank" rel="noopener">XML Sitemap</a>
+                        <a href="{% url 'core:robots_txt' %}" target="_blank" rel="noopener">Robots.txt</a>
+                    </nav>
+                </div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <script>
+        // Sidebar toggle for mobile
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('sidebarOverlay').classList.toggle('active');
+        }
+
+        // Auto-dismiss messages
+        setTimeout(() => {
+            document.querySelectorAll('.message').forEach(msg => {
+                msg.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateY(-10px)';
+                setTimeout(() => msg.remove(), 300);
+            });
+        }, 5000);
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

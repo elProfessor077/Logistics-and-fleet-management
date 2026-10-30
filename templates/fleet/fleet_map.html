@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load core_tags %}
+
+{% block title %}Live Fleet GPS Map{% endblock %}
+{% block meta_description %}Interactive live GPS telematics map tracking active delivery trucks, transit vans, and freight carriers with real-time speed and status updates.{% endblock %}
+{% block meta_keywords %}live fleet map, vehicle telematics, GPS fleet tracking, real-time vehicle locator, logistics route monitoring{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1><i class="fas fa-map-marked-alt" style="color: var(--accent-blue); margin-right: 8px;"></i> Live Fleet Map</h1>
+            <p>Real-time telematics and live GPS positioning stream</p>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <div id="apiStatusBadge" style="display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; color: var(--accent-green); font-weight: 600;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); display: inline-block; animation: pulse-green 1.5s infinite;"></span>
+                <span id="apiStatusText">Live API Active</span>
+            </div>
+            <button onclick="fetchLatestLocations()" class="btn btn-secondary btn-sm" id="refreshBtn">
+                <i class="fas fa-arrows-rotate" id="refreshIcon"></i> Refresh GPS
+            </button>
+            <a href="{% url 'fleet:fleet_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-list"></i> List View</a>
+        </div>
+    </div>
+</div>
+
+<div class="grid-2" style="grid-template-columns: 1fr 360px; gap: 20px;">
+    <!-- Map Container -->
+    <div class="card" style="padding: 0; overflow: hidden; border-radius: 16px; border: 1px solid var(--border-color); height: 680px; position: relative;">
+        <div id="map" style="width: 100%; height: 100%;"></div>
+    </div>
+
+    <!-- Vehicle Sidebar -->
+    <div class="card" style="max-height: 680px; display: flex; flex-direction: column; padding: 20px; border-radius: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-color);">
+            <div>
+                <h3 style="font-size: 1.1rem; font-weight: 700; margin: 0; color: #fff;">Tracked Vehicles</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted);" id="lastSyncTime">Last sync: Just now</span>
+            </div>
+            <span class="badge badge-active" id="vehicleCountBadge">{{ vehicle_data_json|length }} Online</span>
+        </div>
+
+        <div id="vehicleList" style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 10px;">
+            {% for v in vehicle_data_json %}
+            <div class="vehicle-card-item" id="vcard-{{ v.id }}" onclick="focusVehicle({{ v.id }})" style="padding: 12px; border-radius: 12px; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 32px; height: 32px; border-radius: 8px; background: {% if v.status == 'active' %}rgba(16,185,129,0.2){% else %}rgba(245,158,11,0.2){% endif %}; display: flex; align-items: center; justify-content: center; color: {% if v.status == 'active' %}var(--accent-green){% else %}var(--accent-amber){% endif %};">
+                            <i class="fas fa-truck" style="font-size: 0.85rem;"></i>
+                        </div>
+                        <div>
+                            <div style="font-family: monospace; font-weight: 800; font-size: 0.95rem; color: #fff;">{{ v.plate }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ v.make }} {{ v.model }}</div>
+                        </div>
+                    </div>
+                    <span class="badge badge-{{ v.status }}" style="font-size: 0.65rem;">{{ v.status|title }}</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.06);">
+                    <span><i class="fas fa-user" style="color: var(--accent-blue); margin-right: 4px;"></i> {{ v.driver }}</span>
+                    <span><i class="fas fa-gauge-high" style="color: var(--accent-teal); margin-right: 4px;"></i> <strong id="speed-{{ v.id }}">{{ v.speed }}</strong> km/h</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map;
+let markers = {};
+const API_URL = "{% url 'fleet:api_vehicle_locations' %}";
+
+function createVehicleIcon(status, heading = 0) {
+    const color = status === 'active' ? '#10b981' : (status === 'idle' ? '#f59e0b' : '#ef4444');
+    return L.divIcon({
+        html: `<div style="
+            width: 38px; height: 38px; border-radius: 50%;
+            background: ${color}; border: 3px solid rgba(255,255,255,0.95);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        ">
+            <i class="fas fa-truck" style="color: white; font-size: 14px;"></i>
+        </div>`,
+        className: 'custom-fleet-marker',
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+        popupAnchor: [0, -22]
+    });
+}
+
+function initMap() {
+    map = L.map('map').setView([20.5937, 78.9629], 5);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
+        maxZoom: 19
+    }).addTo(map);
+
+
+    // Initial load from template data
+    const initialVehicles = {{ vehicle_data_json|safe }};
+    renderVehicles(initialVehicles);
+}
+
+function renderVehicles(vehicles) {
+    if (!vehicles || vehicles.length === 0) return;
+
+    const bounds = [];
+
+    vehicles.forEach(v => {
+        const pos = [v.lat, v.lng];
+        bounds.push(pos);
+
+        if (markers[v.id]) {
+            // Update existing marker position smoothly
+            markers[v.id].setLatLng(pos);
+            markers[v.id].setIcon(createVehicleIcon(v.status, v.heading));
+        } else {
+            // Create new marker
+            const marker = L.marker(pos, {
+                icon: createVehicleIcon(v.status, v.heading)
+            }).addTo(map);
+
+            marker.bindPopup(`
+                <div style="padding: 6px; min-width: 220px; font-family: Inter, sans-serif;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <strong style="font-size: 15px; font-family: monospace; color: #0f172a;">${v.plate}</strong>
+                        <span style="font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #e0f2fe; color: #0284c7; font-weight: bold; text-transform: uppercase;">${v.status}</span>
+                    </div>
+                    <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">${v.make} ${v.model} (${v.type})</div>
+                    <div style="border-top: 1px solid #e2e8f0; padding-top: 6px; font-size: 12px; line-height: 1.6; color: #334155;">
+                        <div><i class="fas fa-user" style="color: #22c55e; width: 16px;"></i> <b>Driver:</b> ${v.driver}</div>
+                        <div><i class="fas fa-gauge" style="color: #16a34a; width: 16px;"></i> <b>Speed:</b> ${v.speed} km/h</div>
+                        <div><i class="fas fa-compass" style="color: #8b5cf6; width: 16px;"></i> <b>Heading:</b> ${v.heading}°</div>
+                    </div>
+                </div>
+            `);
+
+            markers[v.id] = marker;
+        }
+
+        // Update speed on sidebar card if present
+        const speedEl = document.getElementById(`speed-${v.id}`);
+        if (speedEl) speedEl.textContent = v.speed;
+    });
+
+    if (bounds.length > 0 && Object.keys(markers).length === vehicles.length) {
+        map.fitBounds(L.latLngBounds(bounds), { padding: [50, 50] });
+    }
+}
+
+// Live API Polling
+function fetchLatestLocations() {
+    const icon = document.getElementById('refreshIcon');
+    icon.classList.add('fa-spin');
+
+    fetch(API_URL)
+        .then(response => {
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            if (data.vehicles) {
+                renderVehicles(data.vehicles);
+                document.getElementById('vehicleCountBadge').textContent = `${data.vehicles.length} Online`;
+                document.getElementById('lastSyncTime').textContent = `Last sync: ${new Date().toLocaleTimeString()}`;
+                document.getElementById('apiStatusText').textContent = 'Live API Active';
+            }
+        })
+        .catch(err => {
+            console.error('Fleet API error:', err);
+            document.getElementById('apiStatusText').textContent = 'API Reconnecting...';
+        })
+        .finally(() => {
+            setTimeout(() => icon.classList.remove('fa-spin'), 600);
+        });
+}
+
+function focusVehicle(id) {
+    if (markers[id]) {
+        map.setView(markers[id].getLatLng(), 14, { animate: true });
+        markers[id].openPopup();
+
+        // Highlight sidebar card
+        document.querySelectorAll('.vehicle-card-item').forEach(c => c.style.borderColor = 'var(--border-color)');
+        const activeCard = document.getElementById(`vcard-${id}`);
+        if (activeCard) activeCard.style.borderColor = 'var(--accent-blue)';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initMap();
+    // Auto-poll the API every 10 seconds
+    setInterval(fetchLatestLocations, 10000);
+});
+</script>
+<style>
+@keyframes pulse-green {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+}
+.custom-fleet-marker { background: none !important; border: none !important; }
+</style>
+{% endblock %}

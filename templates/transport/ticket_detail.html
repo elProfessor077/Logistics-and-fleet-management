@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Ticket {{ ticket.ticket_id }} — LogiCraft Transit{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1><i class="fas fa-qrcode" style="color: var(--accent-teal); margin-right: 8px;"></i> Digital Transit Pass</h1>
+            <p>Official electronic boarding pass and gate validation token</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'transport:ticket_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> All Tickets</a>
+            <button onclick="window.print()" class="btn btn-primary btn-sm"><i class="fas fa-print"></i> Print Pass</button>
+        </div>
+    </div>
+</div>
+
+<!-- Ticket Container -->
+<div style="max-width: 720px; margin: 0 auto;">
+    <div class="card" style="border-radius: 20px; padding: 0; overflow: hidden; border: 1px solid var(--border-color); background: var(--bg-secondary); box-shadow: 0 16px 40px rgba(0,0,0,0.5);">
+        <!-- Top Colored Header -->
+        <div style="background: {{ ticket.line.color_code|default:'linear-gradient(135deg, #22c55e, #16a34a)' }}; padding: 24px 30px; display: flex; justify-content: space-between; align-items: center; color: #fff;">
+            <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.85; font-weight: 700;">Metropolitan Transit Authority</span>
+                <h2 style="margin: 4px 0 0 0; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.5px;">{{ ticket.line.name }}</h2>
+            </div>
+            <div style="text-align: right;">
+                <div style="background: rgba(0,0,0,0.25); padding: 6px 14px; border-radius: 8px; font-family: monospace; font-size: 1.1rem; font-weight: 800;">
+                    LINE {{ ticket.line.line_number }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Body -->
+        <div style="padding: 30px;">
+            <!-- Origin to Destination Route Banner -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 20px; border-radius: 14px; margin-bottom: 24px; border: 1px solid var(--border-color);">
+                <div style="flex: 1;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Origin Departure</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ ticket.origin_stop.name }}</div>
+                    <div style="font-size: 0.8rem; color: var(--accent-blue);">Zone {{ ticket.origin_stop.zone }} ({{ ticket.origin_stop.code }})</div>
+                </div>
+
+                <div style="padding: 0 20px; text-align: center; color: var(--accent-teal); font-size: 1.5rem;">
+                    <i class="fas fa-arrow-right-long"></i>
+                </div>
+
+                <div style="flex: 1; text-align: right;">
+                    <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Destination Arrival</div>
+                    <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ ticket.destination_stop.name }}</div>
+                    <div style="font-size: 0.8rem; color: var(--accent-teal);">Zone {{ ticket.destination_stop.zone }} ({{ ticket.destination_stop.code }})</div>
+                </div>
+            </div>
+
+            <!-- Grid Details and QR code -->
+            <div style="display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: center;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Ticket Token ID</div>
+                        <div style="font-family: monospace; font-size: 1.05rem; font-weight: 700; color: #fff; margin-top: 2px;">{{ ticket.ticket_id }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Pass Category</div>
+                        <div style="font-size: 1rem; font-weight: 700; color: var(--accent-purple); margin-top: 2px;">{{ ticket.get_ticket_type_display }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Passenger Name</div>
+                        <div style="font-size: 1rem; font-weight: 700; color: #fff; margin-top: 2px;">{{ ticket.passenger_name }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Fare Amount</div>
+                        <div style="font-size: 1.2rem; font-weight: 800; color: var(--accent-teal); margin-top: 2px;">${{ ticket.price }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Issued At</div>
+                        <div style="font-size: 0.85rem; color: #fff; margin-top: 2px;">{{ ticket.purchase_date|date:"M d, Y · H:i" }}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Valid Until</div>
+                        <div style="font-size: 0.85rem; color: var(--accent-amber); font-weight: 700; margin-top: 2px;">{{ ticket.valid_until|date:"M d, Y · H:i" }}</div>
+                    </div>
+                </div>
+
+                <!-- QR Code Box -->
+                <div style="background: #ffffff; padding: 14px; border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); text-align: center;">
+                    {% if ticket.qr_code %}
+                    <img src="data:image/png;base64,{{ ticket.qr_code }}" alt="Ticket QR Gate Code" style="width: 140px; height: 140px; display: block;">
+                    {% else %}
+                    <div style="width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; background: #f1f5f9; color: #0f172a; font-family: monospace; font-size: 0.8rem; font-weight: bold; text-align: center; padding: 10px;">
+                        SCAN TOKEN<br>{{ ticket.ticket_id }}
+                    </div>
+                    {% endif %}
+                    <div style="font-size: 0.65rem; color: #64748b; font-weight: 700; text-transform: uppercase; margin-top: 6px; letter-spacing: 0.5px;">Turnstile Gate QR</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Perforated Tear Footer -->
+        <div style="border-top: 2px dashed var(--border-color); background: rgba(15, 23, 42, 0.9); padding: 16px 30px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted);">
+            <div>
+                <i class="fas fa-check-circle" style="color: var(--accent-green); margin-right: 6px;"></i> Pass Status: <strong style="color: #fff; text-transform: uppercase;">{{ ticket.get_status_display }}</strong>
+            </div>
+            <div>
+                Non-transferable · Present photo ID on board upon inspector request
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

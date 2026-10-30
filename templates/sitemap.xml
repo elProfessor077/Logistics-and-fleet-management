@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Core Dashboard -->
+  <url>
+    <loc>{{ base_url }}/</loc>
+    <changefreq>hourly</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Public Shipment Tracking -->
+  <url>
+    <loc>{{ base_url }}/shipments/track/</loc>
+    <changefreq>always</changefreq>
+    <priority>0.95</priority>
+  </url>
+
+  <!-- Fleet Operations -->
+  <url>
+    <loc>{{ base_url }}/fleet/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>{{ base_url }}/fleet/map/</loc>
+    <changefreq>hourly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>{{ base_url }}/fleet/drivers/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Warehouse Management -->
+  <url>
+    <loc>{{ base_url }}/warehouse/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Shipments Management -->
+  <url>
+    <loc>{{ base_url }}/shipments/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>{{ base_url }}/shipments/create/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Public Transport & Ticketing -->
+  <url>
+    <loc>{{ base_url }}/transport/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>{{ base_url }}/transport/tickets/book/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
+    <loc>{{ base_url }}/transport/tickets/</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.75</priority>
+  </url>
+
+  <!-- Dynamic Transport Lines -->
+  {% for line in transport_lines %}
+  <url>
+    <loc>{{ base_url }}{% url 'transport:line_detail' line.id %}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  {% endfor %}
+
+  <!-- Dynamic Warehouses -->
+  {% for wh in warehouses %}
+  <url>
+    <loc>{{ base_url }}{% url 'warehouse:warehouse_detail' wh.id %}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  {% endfor %}
+
+  <!-- Dynamic Vehicles -->
+  {% for vehicle in vehicles %}
+  <url>
+    <loc>{{ base_url }}{% url 'fleet:vehicle_detail' vehicle.id %}</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  {% endfor %}
+</urlset>

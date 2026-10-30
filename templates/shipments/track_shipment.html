@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block title %}Track Shipment{% endblock %}
+{% block meta_description %}Track your parcel and freight shipments in real-time. Enter your LogiCraft tracking or waybill number to view live GPS status, carrier milestones, and estimated delivery dates.{% endblock %}
+{% block meta_keywords %}track shipment, package tracking, live freight tracking, waybill tracker, logistics delivery status{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1><i class="fas fa-search-location" style="color: var(--accent-purple); margin-right: 8px;"></i> Track Shipment</h1>
+            <p>Real-time milestone tracking and parcel trajectory</p>
+        </div>
+        <a href="{% url 'shipments:shipment_list' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Back to Shipments
+        </a>
+    </div>
+</div>
+
+<!-- Tracking Search Card -->
+<div class="card" style="margin-bottom: 24px; padding: 28px; background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9)); border: 1px solid var(--border-color); border-radius: 16px;">
+    <form method="get" action="{% url 'shipments:track_shipment' %}" style="display: flex; gap: 14px; max-width: 650px; margin: 0 auto; flex-wrap: wrap;">
+        <div style="flex: 1; position: relative;">
+            <i class="fas fa-barcode" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 1.1rem;"></i>
+            <input type="text" name="tracking" class="form-control" placeholder="Enter Waybill or Tracking # (e.g. TRK-2024-001)" value="{{ tracking_number }}" style="padding-left: 48px; height: 50px; font-size: 1rem; border-radius: 12px; width: 100%;" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="height: 50px; padding: 0 28px; border-radius: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-search"></i> Track Status
+        </button>
+    </form>
+</div>
+
+{% if shipment %}
+<!-- Shipment Summary Card -->
+<div class="card" style="margin-bottom: 24px; padding: 24px; border-radius: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 24px;">
+        <div>
+            <div style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 600;">Waybill Tracking Number</div>
+            <div style="font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: 0.5px; margin-top: 4px; font-family: monospace;">{{ shipment.tracking_number }}</div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <span class="badge badge-{{ shipment.status }}" style="font-size: 0.9rem; padding: 8px 16px; text-transform: uppercase;">{{ shipment.get_status_display }}</span>
+            <span class="badge badge-{{ shipment.priority }}" style="font-size: 0.9rem; padding: 8px 16px; text-transform: uppercase;">{{ shipment.get_priority_display }} Priority</span>
+        </div>
+    </div>
+
+    <!-- Multi-step Tracker Bar -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 30px 0; position: relative;">
+        <div style="text-align: center; position: relative;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; background: {% if shipment.status != 'cancelled' %}var(--accent-blue){% else %}var(--border-color){% endif %}; color: #fff; box-shadow: 0 0 16px rgba(59, 130, 246, 0.4);">
+                <i class="fas fa-file-invoice"></i>
+            </div>
+            <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Order Placed</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">{{ shipment.created_at|date:"M d, H:i" }}</div>
+        </div>
+
+        <div style="text-align: center;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; background: {% if shipment.status in 'picked_up,in_transit,out_for_delivery,delivered' %}var(--accent-blue){% else %}var(--bg-secondary){% endif %}; color: {% if shipment.status in 'picked_up,in_transit,out_for_delivery,delivered' %}#fff{% else %}var(--text-muted){% endif %}; border: 1px solid var(--border-color);">
+                <i class="fas fa-boxes-packing"></i>
+            </div>
+            <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Picked Up</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Warehouse Dispatch</div>
+        </div>
+
+        <div style="text-align: center;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; background: {% if shipment.status in 'in_transit,out_for_delivery,delivered' %}var(--accent-teal){% else %}var(--bg-secondary){% endif %}; color: {% if shipment.status in 'in_transit,out_for_delivery,delivered' %}#fff{% else %}var(--text-muted){% endif %}; border: 1px solid var(--border-color);">
+                <i class="fas fa-truck-moving"></i>
+            </div>
+            <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">In Transit</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Line-Haul Fleet</div>
+        </div>
+
+        <div style="text-align: center;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; background: {% if shipment.status in 'out_for_delivery,delivered' %}var(--accent-purple){% else %}var(--bg-secondary){% endif %}; color: {% if shipment.status in 'out_for_delivery,delivered' %}#fff{% else %}var(--text-muted){% endif %}; border: 1px solid var(--border-color);">
+                <i class="fas fa-shipping-fast"></i>
+            </div>
+            <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Out for Delivery</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Last Mile Courier</div>
+        </div>
+
+        <div style="text-align: center;">
+            <div style="width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; background: {% if shipment.status == 'delivered' %}var(--accent-green){% else %}var(--bg-secondary){% endif %}; color: {% if shipment.status == 'delivered' %}#fff{% else %}var(--text-muted){% endif %}; border: 1px solid var(--border-color);">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div style="font-weight: 600; font-size: 0.85rem; color: #fff;">Delivered</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">{{ shipment.actual_delivery|date:"M d, H:i"|default:"Pending" }}</div>
+        </div>
+    </div>
+
+    <!-- Quick Details Row -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; background: rgba(15, 23, 42, 0.4); padding: 18px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Origin Address</div>
+            <div style="font-size: 0.95rem; font-weight: 600; color: #fff; margin-top: 4px;"><i class="fas fa-location-dot" style="color: var(--accent-blue); margin-right: 6px;"></i> {{ shipment.origin }}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Sender: {{ shipment.sender_name }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Destination</div>
+            <div style="font-size: 0.95rem; font-weight: 600; color: #fff; margin-top: 4px;"><i class="fas fa-flag-checkered" style="color: var(--accent-green); margin-right: 6px;"></i> {{ shipment.destination }}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">Recipient: {{ shipment.receiver_name }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Payload Spec</div>
+            <div style="font-size: 0.95rem; font-weight: 600; color: #fff; margin-top: 4px;"><i class="fas fa-weight-hanging" style="color: var(--accent-amber); margin-right: 6px;"></i> {{ shipment.weight_kg }} kg</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">{{ shipment.dimensions|default:"Standard Package" }}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Assigned Vehicle</div>
+            {% if shipment.vehicle %}
+            <div style="font-size: 0.95rem; font-weight: 600; color: #fff; margin-top: 4px;"><i class="fas fa-truck" style="color: var(--accent-teal); margin-right: 6px;"></i> {{ shipment.vehicle.plate_number }}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">{{ shipment.vehicle.make }} {{ shipment.vehicle.model }}</div>
+            {% else %}
+            <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-muted); margin-top: 4px;">Unassigned</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Tracking Events Timeline -->
+<div class="card" style="padding: 24px; border-radius: 16px;">
+    <h3 style="margin-bottom: 20px; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-stream" style="color: var(--accent-teal);"></i> Activity History & Milestones
+    </h3>
+
+    {% if events %}
+    <div class="timeline" style="position: relative; padding-left: 28px; border-left: 2px solid var(--border-color); margin-left: 14px;">
+        {% for event in events %}
+        <div style="position: relative; margin-bottom: 24px;">
+            <div style="position: absolute; left: -35px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-blue); border: 3px solid var(--bg-primary); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);"></div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <span class="badge badge-{{ event.status }}" style="margin-right: 8px;">{{ event.get_status_display }}</span>
+                    <strong style="color: #fff; font-size: 0.95rem;">{{ event.location }}</strong>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">
+                    <i class="far fa-clock" style="margin-right: 4px;"></i> {{ event.timestamp|date:"M d, Y · H:i" }}
+                </div>
+            </div>
+            {% if event.notes %}
+            <p style="margin-top: 8px; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.4;">{{ event.notes }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color: var(--text-muted); font-size: 0.9rem;">No milestones logged yet for this shipment.</p>
+    {% endif %}
+</div>
+{% elif tracking_number %}
+<div class="card" style="padding: 40px; text-align: center; border-radius: 16px;">
+    <i class="fas fa-exclamation-triangle" style="font-size: 2.5rem; color: var(--accent-amber); margin-bottom: 16px;"></i>
+    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 8px;">No Shipment Found</h3>
+    <p style="color: var(--text-muted); max-width: 450px; margin: 0 auto;">We could not find any active or past shipments registered with waybill tracking number <strong>"{{ tracking_number }}"</strong>. Please verify the number and try again.</p>
+</div>
+{% endif %}
+{% endblock %}

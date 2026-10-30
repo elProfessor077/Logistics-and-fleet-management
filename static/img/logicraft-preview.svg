@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#081c15"/>
+      <stop offset="50%" stop-color="#1b4332"/>
+      <stop offset="100%" stop-color="#2d6a4f"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#52b788"/>
+      <stop offset="100%" stop-color="#74c69d"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Decorative Grid / Lines -->
+  <g stroke="#ffffff" stroke-opacity="0.05" stroke-width="1.5">
+    <line x1="100" y1="0" x2="100" y2="630"/>
+    <line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="500" y1="0" x2="500" y2="630"/>
+    <line x1="700" y1="0" x2="700" y2="630"/>
+    <line x1="900" y1="0" x2="900" y2="630"/>
+    <line x1="1100" y1="0" x2="1100" y2="630"/>
+    <line x1="0" y1="120" x2="1200" y2="120"/>
+    <line x1="0" y1="240" x2="1200" y2="240"/>
+    <line x1="0" y1="360" x2="1200" y2="360"/>
+    <line x1="0" y1="480" x2="1200" y2="480"/>
+  </g>
+
+  <!-- Card container -->
+  <rect x="120" y="90" width="960" height="450" rx="24" fill="#0f291e" fill-opacity="0.75" stroke="#52b788" stroke-opacity="0.25" stroke-width="2" filter="url(#shadow)"/>
+
+  <!-- Logo Icon Badge -->
+  <rect x="180" y="150" width="80" height="80" rx="18" fill="url(#accentGrad)"/>
+  <path d="M198 198h5.5a6.5 6.5 0 0 0 13 0h6a6.5 6.5 0 0 0 13 0H242a2.5 2.5 0 0 0 2.5-2.5V184a2.5 2.5 0 0 0-2.5-2.5H230v-7a2.5 2.5 0 0 0-2.5-2.5H198a2.5 2.5 0 0 0-2.5 2.5v21a2.5 2.5 0 0 0 2.5 2.5zm32-12h9l4.5 7.5H230v-7.5z" fill="#081c15"/>
+
+  <!-- Brand Typography -->
+  <text x="280" y="195" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="44" font-weight="800" fill="#ffffff" letter-spacing="-0.5">LogiCraft</text>
+  <text x="280" y="222" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="600" fill="#74c69d" letter-spacing="2">INTELLIGENT FLEET &amp; LOGISTICS</text>
+
+  <!-- Headline -->
+  <text x="180" y="315" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="38" font-weight="700" fill="#ffffff">Enterprise Fleet Tracking &amp; Supply Chain Operations</text>
+  <text x="180" y="360" font-family="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="22" font-weight="400" fill="#b7e4c7">Real-time GPS Monitoring • Automated Dispatch • Warehouse Inventory • Smart Ticketing</text>
+
+  <!-- Feature Badges -->
+  <g transform="translate(180, 415)">
+    <rect width="180" height="42" rx="10" fill="#1b4332" stroke="#52b788" stroke-opacity="0.4"/>
+    <text x="90" y="26" font-family="'Inter', sans-serif" font-size="14" font-weight="600" fill="#d8f3dc" text-anchor="middle">Live Fleet GPS</text>
+  </g>
+  <g transform="translate(380, 415)">
+    <rect width="190" height="42" rx="10" fill="#1b4332" stroke="#52b788" stroke-opacity="0.4"/>
+    <text x="95" y="26" font-family="'Inter', sans-serif" font-size="14" font-weight="600" fill="#d8f3dc" text-anchor="middle">Shipment Tracker</text>
+  </g>
+  <g transform="translate(590, 415)">
+    <rect width="210" height="42" rx="10" fill="#1b4332" stroke="#52b788" stroke-opacity="0.4"/>
+    <text x="105" y="26" font-family="'Inter', sans-serif" font-size="14" font-weight="600" fill="#d8f3dc" text-anchor="middle">Warehouse Analytics</text>
+  </g>
+  <g transform="translate(820, 415)">
+    <rect width="180" height="42" rx="10" fill="#1b4332" stroke="#52b788" stroke-opacity="0.4"/>
+    <text x="90" y="26" font-family="'Inter', sans-serif" font-size="14" font-weight="600" fill="#d8f3dc" text-anchor="middle">Transit Lines</text>
+  </g>
+</svg>

@@ -1,0 +1,1 @@
+# LogiCraft Django Project

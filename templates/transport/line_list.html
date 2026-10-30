@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Transit Lines &amp; Schedules{% endblock %}
+{% block meta_description %}Explore city public transit network schedules, bus routes, metro lines, tram stops, ticket fares, and live multi-modal connectivity.{% endblock %}
+{% block meta_keywords %}public transit schedules, bus routes, metro transit lines, city transit tickets, public transportation network{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1><i class="fas fa-route" style="color: var(--accent-blue); margin-right: 8px;"></i> Transit Lines</h1>
+            <p>Urban mass transit network, routes, schedules, and connectivity</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'transport:ticket_list' %}" class="btn btn-secondary"><i class="fas fa-receipt"></i> Issued Tickets</a>
+            <a href="{% url 'transport:book_ticket' %}" class="btn btn-primary"><i class="fas fa-ticket"></i> Book Ticket</a>
+        </div>
+    </div>
+</div>
+
+<!-- Type Filter Tabs -->
+<div class="filter-bar" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px;">
+    <a href="{% url 'transport:line_list' %}" class="btn {% if not type_filter %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+        All Transit Modes
+    </a>
+    {% for val, label in type_choices %}
+    <a href="{% url 'transport:line_list' %}?type={{ val }}" class="btn {% if type_filter == val %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">
+        {% if val == 'bus' %}<i class="fas fa-bus"></i>
+        {% elif val == 'metro' %}<i class="fas fa-subway"></i>
+        {% elif val == 'tram' %}<i class="fas fa-train-tram"></i>
+        {% elif val == 'ferry' %}<i class="fas fa-ship"></i>
+        {% elif val == 'rail' %}<i class="fas fa-train"></i>
+        {% endif %}
+        {{ label }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Transit Lines Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+    {% for line in lines %}
+    <div class="card" style="border-radius: 16px; border-top: 4px solid {{ line.color_code }}; display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="background: {{ line.color_code }}; color: #fff; font-weight: 800; font-size: 1.1rem; padding: 6px 14px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-family: monospace;">
+                        {{ line.line_number }}
+                    </div>
+                    <div>
+                        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff; margin: 0;">{{ line.name }}</h3>
+                        <span style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">
+                            {% if line.line_type == 'bus' %}<i class="fas fa-bus"></i> Bus
+                            {% elif line.line_type == 'metro' %}<i class="fas fa-subway"></i> Metro Line
+                            {% elif line.line_type == 'tram' %}<i class="fas fa-train-tram"></i> Tramway
+                            {% elif line.line_type == 'ferry' %}<i class="fas fa-ship"></i> Waterway Ferry
+                            {% elif line.line_type == 'rail' %}<i class="fas fa-train"></i> Commuter Rail
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                <span class="badge badge-active" style="font-size: 0.75rem;">Active</span>
+            </div>
+
+            {% if line.description %}
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.4;">
+                {{ line.description|truncatewords:20 }}
+            </p>
+            {% endif %}
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 10px;">
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Headway / Freq</div>
+                    <div style="font-size: 0.9rem; font-weight: 700; color: #fff; margin-top: 2px;">
+                        <i class="far fa-clock" style="color: var(--accent-blue); margin-right: 4px;"></i> Every {{ line.frequency_minutes }} min
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Stops & Stations</div>
+                    <div style="font-size: 0.9rem; font-weight: 700; color: #fff; margin-top: 2px;">
+                        <i class="fas fa-map-pin" style="color: var(--accent-teal); margin-right: 4px;"></i> {{ line.line_stops.count }} stops
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; border-top: 1px solid var(--border-color); padding-top: 14px; margin-top: 10px;">
+            <a href="{% url 'transport:line_detail' pk=line.pk %}" class="btn btn-secondary btn-sm" style="flex: 1; text-align: center;">
+                <i class="fas fa-circle-info"></i> Route Details
+            </a>
+            <a href="{% url 'transport:book_ticket' %}?line={{ line.pk }}" class="btn btn-primary btn-sm" style="flex: 1; text-align: center;">
+                <i class="fas fa-ticket"></i> Book Ride
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card" style="grid-column: 1 / -1; padding: 40px; text-align: center;">
+        <i class="fas fa-route" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 16px;"></i>
+        <h3 style="font-size: 1.2rem; color: #fff; margin-bottom: 8px;">No Transit Lines Found</h3>
+        <p style="color: var(--text-muted);">No transit routes match the selected criteria.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

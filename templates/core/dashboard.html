@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Operations Dashboard{% endblock %}
+{% block meta_description %}LogiCraft Command Center: Monitor enterprise fleet telematics, warehouse inventory volumes, shipment status, and transit line schedules in real-time.{% endblock %}
+{% block meta_keywords %}logistics dashboard, fleet KPIs, shipment analytics, warehouse tracking, live supply chain metrics{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-chart-pie" style="color: var(--accent-blue); margin-right: 8px;"></i> Command Center</h1>
+    <p>Real-time overview of your logistics operations</p>
+</div>
+
+<!-- KPI Cards Row 1: Fleet -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="fas fa-truck"></i></div>
+        <div class="kpi-value">{{ total_vehicles }}</div>
+        <div class="kpi-label">Total Vehicles</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green"><i class="fas fa-circle-check"></i></div>
+        <div class="kpi-value">{{ active_vehicles }}</div>
+        <div class="kpi-label">Active Vehicles</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon orange"><i class="fas fa-warehouse"></i></div>
+        <div class="kpi-value">{{ total_warehouses }}</div>
+        <div class="kpi-label">Warehouses</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon purple"><i class="fas fa-boxes-stacked"></i></div>
+        <div class="kpi-value">{{ total_shipments }}</div>
+        <div class="kpi-label">Total Shipments</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon cyan"><i class="fas fa-shipping-fast"></i></div>
+        <div class="kpi-value">{{ in_transit_shipments }}</div>
+        <div class="kpi-label">In Transit</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon teal"><i class="fas fa-check-double"></i></div>
+        <div class="kpi-value">{{ delivered_shipments }}</div>
+        <div class="kpi-label">Delivered</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon pink"><i class="fas fa-route"></i></div>
+        <div class="kpi-value">{{ total_lines }}</div>
+        <div class="kpi-label">Transit Lines</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon red">
+            <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div class="kpi-value">{{ low_stock_items }}</div>
+        <div class="kpi-label">Low Stock Alerts</div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid-2">
+    <!-- Fleet Status Chart -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-chart-doughnut" style="color: var(--accent-blue); margin-right: 8px;"></i> Fleet Status</span>
+            <span class="card-subtitle">Vehicle distribution</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="fleetChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Shipment Status Chart -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-chart-bar" style="color: var(--accent-purple); margin-right: 8px;"></i> Shipment Status</span>
+            <span class="card-subtitle">Current pipeline</span>
+        </div>
+        <div class="chart-container">
+            <canvas id="shipmentChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Warehouse Utilization -->
+{% if warehouses %}
+<div class="card" style="margin-bottom: 32px;">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-warehouse" style="color: var(--accent-teal); margin-right: 8px;"></i> Warehouse Utilization</span>
+        <a href="{% url 'warehouse:warehouse_list' %}" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="grid-3" style="margin-bottom: 0;">
+        {% for wh in warehouses %}
+        <a href="{% url 'warehouse:warehouse_detail' wh.pk %}" class="warehouse-card" style="text-decoration: none;">
+            <div style="padding: 16px; background: rgba(34, 197, 94, 0.04); border: 1px solid var(--border-color); border-radius: var(--radius-md); transition: all 0.3s ease;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--text-primary);">{{ wh.name }}</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary);">{{ wh.code }} · {{ wh.city }}</div>
+                    </div>
+                    <span style="font-weight: 700; font-size: 1.1rem; color: {% if wh.utilization_percent > 90 %}var(--danger){% elif wh.utilization_percent > 70 %}var(--warning){% else %}var(--accent-blue){% endif %};">{{ wh.utilization_percent }}%</span>
+                </div>
+                <div class="utilization-bar">
+                    <div class="utilization-fill {% if wh.utilization_percent > 90 %}danger{% elif wh.utilization_percent > 70 %}warning{% endif %}" style="width: {{ wh.utilization_percent }}%;"></div>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Shipments Table -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-clock-rotate-left" style="color: var(--accent-cyan); margin-right: 8px;"></i> Recent Shipments</span>
+        <a href="{% url 'shipments:shipment_list' %}" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tracking #</th>
+                    <th>Origin</th>
+                    <th>Destination</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for shipment in recent_shipments %}
+                <tr>
+                    <td>
+                        <a href="{% url 'shipments:shipment_detail' shipment.pk %}" style="font-weight: 600;">
+                            {{ shipment.tracking_number }}
+                        </a>
+                    </td>
+                    <td>{{ shipment.origin|truncatechars:25 }}</td>
+                    <td>{{ shipment.destination|truncatechars:25 }}</td>
+                    <td><span class="badge badge-{{ shipment.status }}">{{ shipment.get_status_display }}</span></td>
+                    <td><span class="badge badge-{{ shipment.priority }}">{{ shipment.get_priority_display }}</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.83rem;">{{ shipment.created_at|date:"M d, Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        <i class="fas fa-inbox" style="font-size: 2rem; display: block; margin-bottom: 8px; opacity: 0.4;"></i>
+                        No shipments yet
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Chart.js global config for dark theme
+    Chart.defaults.color = '#8892b0';
+    Chart.defaults.borderColor = 'rgba(56, 97, 251, 0.1)';
+
+    // Fleet Status Doughnut Chart
+    const fleetData = {{ fleet_status_data|safe }};
+    new Chart(document.getElementById('fleetChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Active', 'Idle', 'Maintenance', 'Retired'],
+            datasets: [{
+                data: [fleetData.active || 0, fleetData.idle || 0, fleetData.maintenance || 0, fleetData.retired || 0],
+                backgroundColor: [
+                    'rgba(16, 185, 129, 0.8)',
+                    'rgba(245, 158, 11, 0.8)',
+                    'rgba(239, 68, 68, 0.8)',
+                    'rgba(90, 99, 128, 0.8)'
+                ],
+                borderColor: 'transparent',
+                borderWidth: 0,
+                hoverOffset: 8,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 16,
+                        usePointStyle: true,
+                        pointStyleWidth: 8,
+                        font: { family: 'Inter', size: 12 }
+                    }
+                }
+            }
+        }
+    });
+
+    // Shipment Status Bar Chart
+    const shipmentData = {{ shipment_status_data|safe }};
+    new Chart(document.getElementById('shipmentChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Pending', 'Picked Up', 'In Transit', 'Delivered', 'Failed'],
+            datasets: [{
+                label: 'Shipments',
+                data: [
+                    shipmentData.pending || 0,
+                    shipmentData.picked_up || 0,
+                    shipmentData.in_transit || 0,
+                    shipmentData.delivered || 0,
+                    shipmentData.failed || 0
+                ],
+                backgroundColor: [
+                    'rgba(245, 158, 11, 0.7)',
+                    'rgba(59, 130, 246, 0.7)',
+                    'rgba(34, 197, 94, 0.7)',
+                    'rgba(16, 185, 129, 0.7)',
+                    'rgba(239, 68, 68, 0.7)'
+                ],
+                borderRadius: 6,
+                borderSkipped: false,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { font: { family: 'Inter', size: 11 } },
+                    grid: { color: 'rgba(56, 97, 251, 0.06)' }
+                },
+                x: {
+                    ticks: { font: { family: 'Inter', size: 11 } },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

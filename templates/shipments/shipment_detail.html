@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ shipment.tracking_number }} — Shipment Detail{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{% url 'shipments:shipment_list' %}" class="btn btn-secondary btn-sm" style="margin-bottom: 16px;"><i class="fas fa-arrow-left"></i> Back to Shipments</a>
+</div>
+
+<div class="detail-header">
+    <div class="detail-icon" style="background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));">
+        <i class="fas fa-box"></i>
+    </div>
+    <div>
+        <div class="detail-title">{{ shipment.tracking_number }}</div>
+        <div class="detail-subtitle">
+            {{ shipment.origin }} → {{ shipment.destination }} ·
+            <span class="badge badge-{{ shipment.status }}">{{ shipment.get_status_display }}</span>
+            <span class="badge badge-{{ shipment.priority }}">{{ shipment.get_priority_display }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Shipment Progress Bar -->
+<div class="card" style="margin-bottom: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; position: relative; padding: 20px 0;">
+        {% with status_list="pending,picked_up,in_transit,out_for_delivery,delivered" %}
+        {% for s in status_list|cut:" " %}
+        {% endfor %}
+        {% endwith %}
+        <div style="position: absolute; top: 50%; left: 5%; right: 5%; height: 3px; background: var(--border-color); transform: translateY(-50%); z-index: 0;"></div>
+        <div style="position: absolute; top: 50%; left: 5%; height: 3px; background: var(--gradient-primary); transform: translateY(-50%); z-index: 1;
+            width: {% if shipment.status == 'delivered' %}90{% elif shipment.status == 'out_for_delivery' %}67{% elif shipment.status == 'in_transit' %}45{% elif shipment.status == 'picked_up' %}22{% else %}5{% endif %}%;"></div>
+
+        {% for status_val, status_label in shipment.STATUS_CHOICES %}
+            {% if status_val == 'pending' or status_val == 'picked_up' or status_val == 'in_transit' or status_val == 'out_for_delivery' or status_val == 'delivered' %}
+            <div style="text-align: center; z-index: 2; flex: 1;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; margin: 0 auto 8px;
+                    {% if shipment.status == status_val %}
+                        background: var(--accent-blue); box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+                    {% elif shipment.status == 'delivered' or shipment.status == 'out_for_delivery' and status_val == 'in_transit' or shipment.status == 'out_for_delivery' and status_val == 'picked_up' or shipment.status == 'out_for_delivery' and status_val == 'pending' or shipment.status == 'in_transit' and status_val == 'picked_up' or shipment.status == 'in_transit' and status_val == 'pending' or shipment.status == 'picked_up' and status_val == 'pending' %}
+                        background: var(--success);
+                    {% else %}
+                        background: var(--bg-card); border: 2px solid var(--border-color);
+                    {% endif %}
+                    display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-check" style="color: white; font-size: 0.7rem;"></i>
+                </div>
+                <div style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 500;">{{ status_label }}</div>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<div class="grid-2">
+    <!-- Shipment Details -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-info-circle" style="color: var(--accent-blue); margin-right: 8px;"></i> Shipment Details</span>
+        </div>
+        <div class="info-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="info-item">
+                <div class="info-label">Weight</div>
+                <div class="info-value">{{ shipment.weight_kg|floatformat:1 }} kg</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Dimensions</div>
+                <div class="info-value">{{ shipment.dimensions|default:"N/A" }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Vehicle</div>
+                <div class="info-value">{% if shipment.vehicle %}{{ shipment.vehicle.plate_number }}{% else %}Not assigned{% endif %}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Route</div>
+                <div class="info-value">{% if shipment.route %}{{ shipment.route.name }}{% else %}Direct{% endif %}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Estimated Delivery</div>
+                <div class="info-value">{% if shipment.estimated_delivery %}{{ shipment.estimated_delivery|date:"M d, Y H:i" }}{% else %}TBD{% endif %}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Created</div>
+                <div class="info-value">{{ shipment.created_at|date:"M d, Y H:i" }}</div>
+            </div>
+        </div>
+
+        <!-- Sender / Receiver -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+            <div style="padding: 16px; background: rgba(16, 185, 129, 0.05); border-radius: var(--radius-sm); border: 1px solid rgba(16, 185, 129, 0.15);">
+                <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--success); font-weight: 600; margin-bottom: 8px;">
+                    <i class="fas fa-arrow-up-from-bracket"></i> Sender
+                </div>
+                <div style="font-weight: 600;">{{ shipment.sender_name }}</div>
+                <div style="font-size: 0.82rem; color: var(--text-secondary);">{{ shipment.sender_phone }}</div>
+                {% if shipment.sender_email %}<div style="font-size: 0.82rem; color: var(--text-secondary);">{{ shipment.sender_email }}</div>{% endif %}
+            </div>
+            <div style="padding: 16px; background: rgba(34, 197, 94, 0.05); border-radius: var(--radius-sm); border: 1px solid rgba(34, 197, 94, 0.15);">
+                <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-blue); font-weight: 600; margin-bottom: 8px;">
+                    <i class="fas fa-arrow-down-to-bracket"></i> Receiver
+                </div>
+                <div style="font-weight: 600;">{{ shipment.receiver_name }}</div>
+                <div style="font-size: 0.82rem; color: var(--text-secondary);">{{ shipment.receiver_phone }}</div>
+                {% if shipment.receiver_email %}<div style="font-size: 0.82rem; color: var(--text-secondary);">{{ shipment.receiver_email }}</div>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Events Timeline -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title"><i class="fas fa-timeline" style="color: var(--accent-cyan); margin-right: 8px;"></i> Tracking Events</span>
+        </div>
+        {% if events %}
+        <div class="timeline">
+            {% for event in events %}
+            <div class="timeline-item">
+                <div class="timeline-dot {% if event.status == 'delivered' %}active{% elif event.status == 'failed' %}failed{% elif event.status == 'pending' %}pending{% endif %}"></div>
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <span class="timeline-title">
+                            <span class="badge badge-{{ event.status }}" style="font-size: 0.7rem;">{{ event.get_status_display }}</span>
+                        </span>
+                        <span class="timeline-time">{{ event.timestamp|date:"M d, H:i" }}</span>
+                    </div>
+                    <div class="timeline-body">
+                        {% if event.location %}<i class="fas fa-location-dot" style="color: var(--accent-blue); margin-right: 4px;"></i>{{ event.location }}<br>{% endif %}
+                        {% if event.notes %}{{ event.notes }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding: 30px;">
+            <i class="fas fa-timeline"></i>
+            <p>No tracking events yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

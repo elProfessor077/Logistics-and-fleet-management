@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Fleet Vehicles Directory{% endblock %}
+{% block meta_description %}Manage and monitor your commercial vehicle fleet. Filter by vehicle status, model, fuel type, payload capacity, and assigned drivers.{% endblock %}
+{% block meta_keywords %}fleet vehicles, fleet management, truck directory, vehicle dispatch, driver assignment{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1><i class="fas fa-truck" style="color: var(--accent-blue); margin-right: 8px;"></i> Fleet Vehicles</h1>
+            <p>Manage and monitor your entire fleet</p>
+        </div>
+        <a href="{% url 'fleet:fleet_map' %}" class="btn btn-primary"><i class="fas fa-map-marked-alt"></i> View Map</a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+    <form method="get" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; width: 100%;">
+        <select name="status" class="form-control" onchange="this.form.submit()">
+            <option value="">All Status</option>
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="type" class="form-control" onchange="this.form.submit()">
+            <option value="">All Types</option>
+            {% for val, label in type_choices %}
+            <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        {% if status_filter or type_filter %}
+        <a href="{% url 'fleet:fleet_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Vehicles Table -->
+<div class="card">
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Plate Number</th>
+                    <th>Vehicle</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Fuel</th>
+                    <th>Mileage</th>
+                    <th>Driver</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehicle in vehicles %}
+                <tr>
+                    <td><span style="font-weight: 700; color: var(--accent-blue);">{{ vehicle.plate_number }}</span></td>
+                    <td>{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</td>
+                    <td>
+                        <i class="fas {% if vehicle.vehicle_type == 'truck' %}fa-truck{% elif vehicle.vehicle_type == 'van' %}fa-van-shuttle{% elif vehicle.vehicle_type == 'bus' %}fa-bus{% elif vehicle.vehicle_type == 'pickup' %}fa-truck-pickup{% elif vehicle.vehicle_type == 'trailer' %}fa-trailer{% else %}fa-car{% endif %}" style="color: var(--text-muted); margin-right: 6px;"></i>
+                        {{ vehicle.get_vehicle_type_display }}
+                    </td>
+                    <td><span class="badge badge-{{ vehicle.status }}">{{ vehicle.get_status_display }}</span></td>
+                    <td>{{ vehicle.get_fuel_type_display }}</td>
+                    <td>{{ vehicle.mileage|floatformat:0 }} km</td>
+                    <td>
+                        {% if vehicle.assigned_driver %}
+                            {{ vehicle.assigned_driver.full_name }}
+                        {% else %}
+                            <span style="color: var(--text-muted);">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'fleet:vehicle_detail' vehicle.pk %}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            <i class="fas fa-truck"></i>
+                            <p>No vehicles found</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

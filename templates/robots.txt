@@ -1,0 +1,13 @@
+# robots.txt for LogiCraft Fleet & Logistics Management
+User-agent: *
+Allow: /
+Allow: /shipments/track/
+Allow: /transport/
+Allow: /fleet/
+Allow: /warehouse/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /accounts/
+
+# Sitemaps
+Sitemap: {{ base_url }}/sitemap.xml

@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ warehouse.name }} — Warehouse{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <a href="{% url 'warehouse:warehouse_list' %}" class="btn btn-secondary btn-sm" style="margin-bottom: 16px;"><i class="fas fa-arrow-left"></i> Back to Warehouses</a>
+</div>
+
+<div class="detail-header">
+    <div class="detail-icon" style="background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));">
+        <i class="fas fa-warehouse"></i>
+    </div>
+    <div>
+        <div class="detail-title">{{ warehouse.name }}</div>
+        <div class="detail-subtitle">{{ warehouse.code }} · {{ warehouse.city }}{% if warehouse.state %}, {{ warehouse.state }}{% endif %}</div>
+    </div>
+</div>
+
+<!-- KPI Row -->
+<div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="kpi-card">
+        <div class="kpi-icon teal"><i class="fas fa-cubes"></i></div>
+        <div class="kpi-value">{{ warehouse.capacity|floatformat:0 }}</div>
+        <div class="kpi-label">Total Capacity</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="fas fa-box"></i></div>
+        <div class="kpi-value">{{ warehouse.current_utilization|floatformat:0 }}</div>
+        <div class="kpi-label">Currently Used</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon green"><i class="fas fa-box-open"></i></div>
+        <div class="kpi-value">{{ warehouse.available_capacity|floatformat:0 }}</div>
+        <div class="kpi-label">Available</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-icon {% if warehouse.utilization_percent > 90 %}red{% elif warehouse.utilization_percent > 70 %}orange{% else %}cyan{% endif %}">
+            <i class="fas fa-chart-pie"></i>
+        </div>
+        <div class="kpi-value">{{ warehouse.utilization_percent }}%</div>
+        <div class="kpi-label">Utilization</div>
+    </div>
+</div>
+
+{% if low_stock_items %}
+<!-- Low Stock Alert -->
+<div class="card" style="margin-bottom: 24px; border-color: rgba(239, 68, 68, 0.3);">
+    <div class="card-header">
+        <span class="card-title" style="color: var(--danger);"><i class="fas fa-triangle-exclamation" style="margin-right: 8px;"></i> Low Stock Alerts</span>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>SKU</th><th>Item</th><th>Current Qty</th><th>Min Stock</th></tr>
+            </thead>
+            <tbody>
+                {% for item in low_stock_items %}
+                <tr>
+                    <td><span style="font-weight: 600; color: var(--danger);">{{ item.sku }}</span></td>
+                    <td>{{ item.name }}</td>
+                    <td><strong>{{ item.quantity }}</strong> {{ item.get_unit_display }}</td>
+                    <td>{{ item.min_stock }} {{ item.get_unit_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="get" style="display: flex; gap: 12px; align-items: center; width: 100%;">
+        <select name="category" class="form-control" onchange="this.form.submit()">
+            <option value="">All Categories</option>
+            {% for val, label in category_choices %}
+            <option value="{{ val }}" {% if category_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        {% if category_filter %}
+        <a href="{% url 'warehouse:warehouse_detail' warehouse.pk %}" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Inventory Table -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-boxes-stacked" style="color: var(--accent-blue); margin-right: 8px;"></i> Inventory ({{ items|length }} items)</span>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Item Name</th>
+                    <th>Category</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total Value</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><span style="font-weight: 600; color: var(--accent-blue);">{{ item.sku }}</span></td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.get_category_display }}</td>
+                    <td><strong>{{ item.quantity }}</strong> {{ item.get_unit_display }}</td>
+                    <td>${{ item.unit_price|floatformat:2 }}</td>
+                    <td style="font-weight: 600;">${{ item.stock_value|floatformat:2 }}</td>
+                    <td>
+                        {% if item.is_low_stock %}
+                        <span class="badge badge-failed">Low Stock</span>
+                        {% else %}
+                        <span class="badge badge-active">In Stock</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn btn-secondary btn-sm" onclick="openModal('add', {{ item.pk }}, '{{ item.name }}')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="openModal('remove', {{ item.pk }}, '{{ item.name }}')">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state"><i class="fas fa-box-open"></i><p>No inventory items</p></div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Movements -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title"><i class="fas fa-arrow-right-arrow-left" style="color: var(--accent-purple); margin-right: 8px;"></i> Recent Stock Movements</span>
+    </div>
+    {% if movements %}
+    <div class="timeline">
+        {% for mov in movements %}
+        <div class="timeline-item">
+            <div class="timeline-dot {% if mov.movement_type == 'in' %}active{% elif mov.movement_type == 'out' %}failed{% else %}pending{% endif %}"></div>
+            <div class="timeline-content">
+                <div class="timeline-header">
+                    <span class="timeline-title">
+                        {% if mov.movement_type == 'in' %}<i class="fas fa-arrow-down" style="color: var(--success);"></i>{% elif mov.movement_type == 'out' %}<i class="fas fa-arrow-up" style="color: var(--danger);"></i>{% else %}<i class="fas fa-arrows-rotate" style="color: var(--warning);"></i>{% endif %}
+                        {{ mov.get_movement_type_display }}
+                    </span>
+                    <span class="timeline-time">{{ mov.timestamp|date:"M d, H:i" }}</span>
+                </div>
+                <div class="timeline-body">
+                    <strong>{{ mov.quantity }}</strong> × {{ mov.item.name }}
+                    {% if mov.reference %}<br>Ref: {{ mov.reference }}{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 30px;"><i class="fas fa-arrow-right-arrow-left"></i><p>No movements recorded</p></div>
+    {% endif %}
+</div>
+
+<!-- Stock Modal -->
+<div class="modal-backdrop" id="stockModal">
+    <div class="modal">
+        <div class="modal-title" id="modalTitle">Add Stock</div>
+        <form id="stockForm" method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Item</label>
+                <input type="text" class="form-control" id="modalItemName" disabled>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quantity</label>
+                <input type="number" name="quantity" class="form-control" min="1" required placeholder="Enter quantity">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Reference</label>
+                <input type="text" name="reference" class="form-control" placeholder="PO number, invoice, etc.">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="2" placeholder="Optional notes"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="modalSubmit">Add Stock</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openModal(action, itemId, itemName) {
+        const modal = document.getElementById('stockModal');
+        const form = document.getElementById('stockForm');
+        const title = document.getElementById('modalTitle');
+        const submit = document.getElementById('modalSubmit');
+        const nameInput = document.getElementById('modalItemName');
+
+        nameInput.value = itemName;
+
+        if (action === 'add') {
+            title.textContent = 'Add Stock';
+            submit.textContent = 'Add Stock';
+            form.action = `/warehouse/item/${itemId}/add/`;
+        } else {
+            title.textContent = 'Remove Stock';
+            submit.textContent = 'Remove Stock';
+            form.action = `/warehouse/item/${itemId}/remove/`;
+        }
+
+        modal.classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('stockModal').classList.remove('active');
+    }
+
+    document.getElementById('stockModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+</script>
+{% endblock %}

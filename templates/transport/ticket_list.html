@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Transit Tickets — LogiCraft{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1><i class="fas fa-receipt" style="color: var(--accent-teal); margin-right: 8px;"></i> Transit Tickets</h1>
+            <p>Passenger booking registry, e-passes, and electronic gate tokens</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'transport:line_list' %}" class="btn btn-secondary"><i class="fas fa-route"></i> Transit Lines</a>
+            <a href="{% url 'transport:book_ticket' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Book New Ticket</a>
+        </div>
+    </div>
+</div>
+
+<!-- Tickets Table -->
+<div class="card" style="border-radius: 16px;">
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket ID</th>
+                    <th>Passenger</th>
+                    <th>Transit Line</th>
+                    <th>Origin Station</th>
+                    <th>Destination</th>
+                    <th>Type</th>
+                    <th>Fare</th>
+                    <th>Issued At</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tickets %}
+                <tr>
+                    <td>
+                        <a href="{% url 'transport:ticket_detail' pk=t.pk %}" style="font-family: monospace; font-weight: 700; color: var(--accent-blue);">
+                            {{ t.ticket_id }}
+                        </a>
+                    </td>
+                    <td>
+                        <strong style="color: #fff;">{{ t.passenger_name }}</strong>
+                        {% if t.passenger_email %}
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ t.passenger_email }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="background: {{ t.line.color_code|default:'var(--accent-blue)' }}; color: #fff; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; font-family: monospace; margin-right: 6px;">
+                            {{ t.line.line_number }}
+                        </span>
+                        {{ t.line.name }}
+                    </td>
+                    <td>{{ t.origin_stop.name }}</td>
+                    <td>{{ t.destination_stop.name }}</td>
+                    <td><span class="badge" style="background: rgba(168, 85, 247, 0.15); color: var(--accent-purple); border: 1px solid rgba(168, 85, 247, 0.3);">{{ t.get_ticket_type_display }}</span></td>
+                    <td><strong style="color: var(--accent-teal);">${{ t.price }}</strong></td>
+                    <td style="font-size: 0.8rem; color: var(--text-muted);">{{ t.purchase_date|date:"M d, H:i" }}</td>
+                    <td>
+                        {% if t.status == 'active' %}
+                        <span class="badge badge-active">Active</span>
+                        {% elif t.status == 'used' %}
+                        <span class="badge badge-idle">Used</span>
+                        {% elif t.status == 'expired' %}
+                        <span class="badge badge-maintenance">Expired</span>
+                        {% else %}
+                        <span class="badge">{{ t.get_status_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'transport:ticket_detail' pk=t.pk %}" class="btn btn-secondary btn-sm" title="View Ticket & QR">
+                            <i class="fas fa-qrcode"></i> View Pass
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                        <i class="fas fa-ticket-alt" style="font-size: 2rem; margin-bottom: 12px; display: block;"></i>
+                        No tickets issued yet. Click "Book New Ticket" to generate a transit pass.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

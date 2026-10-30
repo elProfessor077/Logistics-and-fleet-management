@@ -1,0 +1,237 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Transit Ticket{% endblock %}
+{% block meta_description %}Book public transit tickets and monthly travel passes online. Select bus, metro, and tram routes, choose passenger tiers, and receive instant digital tickets.{% endblock %}
+{% block meta_keywords %}book bus ticket, metro transit pass, online ticketing, digital transit pass, urban transit fares{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-actions">
+        <div>
+            <h1><i class="fas fa-ticket" style="color: var(--accent-teal); margin-right: 8px;"></i> Transit Ticketing</h1>
+            <p>Purchase digital single journey, return, day pass, or monthly transit passes</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'transport:ticket_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-receipt"></i> View My Tickets</a>
+            <a href="{% url 'transport:line_list' %}" class="btn btn-secondary btn-sm"><i class="fas fa-route"></i> Transit Lines</a>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; max-width: 1100px; margin: 0 auto;">
+    <!-- Booking Form Card -->
+    <div class="card" style="padding: 32px; border-radius: 16px;">
+        <form method="post" action="{% url 'transport:book_ticket' %}" id="ticketBookingForm">
+            {% csrf_token %}
+
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--accent-blue); display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-route"></i> Journey & Route Selection
+            </h3>
+
+            <!-- Line Select -->
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Select Transit Line *</label>
+                <select name="line" id="lineSelect" class="form-control" required style="font-weight: 600;">
+                    <option value="">-- Choose a Transit Line --</option>
+                    {% for l in lines %}
+                    <option value="{{ l.id }}" data-type="{{ l.line_type }}" data-freq="{{ l.frequency_minutes }}">
+                        [{{ l.line_number }}] {{ l.name }} ({{ l.get_line_type_display }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Origin & Destination -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Origin Station / Stop *</label>
+                    <select name="origin_stop" id="originStopSelect" class="form-control" required disabled>
+                        <option value="">-- Select line first --</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Destination Station / Stop *</label>
+                    <select name="destination_stop" id="destinationStopSelect" class="form-control" required disabled>
+                        <option value="">-- Select line first --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Ticket Type Selection -->
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--accent-purple); display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-tags"></i> Fare Option & Validity
+            </h3>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 24px;">
+                {% for val, label in ticket_type_choices %}
+                <label class="ticket-type-card" style="border: 2px solid var(--border-color); background: var(--bg-secondary); border-radius: 12px; padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.2s;">
+                    <input type="radio" name="ticket_type" value="{{ val }}" {% if val == 'single' %}checked{% endif %} style="display: none;" onchange="updateFare()">
+                    <div style="font-weight: 700; font-size: 0.95rem; color: #fff; margin-bottom: 4px;">{{ label }}</div>
+                    <div class="type-price" style="font-size: 1.15rem; font-weight: 800; color: var(--accent-teal);" data-type="{{ val }}">
+                        {% if val == 'single' %}$2.50
+                        {% elif val == 'return' %}$4.50
+                        {% elif val == 'day' %}$7.00
+                        {% elif val == 'weekly' %}$25.00
+                        {% elif val == 'monthly' %}$80.00
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
+                        {% if val == 'single' %}Valid 2 hrs
+                        {% elif val == 'return' %}Valid 24 hrs
+                        {% elif val == 'day' %}Valid 1 day
+                        {% elif val == 'weekly' %}Valid 7 days
+                        {% elif val == 'monthly' %}Valid 30 days
+                        {% endif %}
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+
+            <!-- Passenger Details -->
+            <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; color: var(--accent-teal); display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-id-card"></i> Passenger Credentials
+            </h3>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Full Passenger Name *</label>
+                    <input type="text" name="passenger_name" class="form-control" placeholder="e.g. Johnathan Doe" required>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Email (For E-Ticket delivery)</label>
+                    <input type="email" name="passenger_email" class="form-control" placeholder="passenger@example.com">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 28px;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary);">Mobile Phone Number</label>
+                <input type="tel" name="passenger_phone" class="form-control" placeholder="+91 98765 43210" style="max-width: 350px;">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; height: 50px; font-size: 1.05rem; font-weight: 700; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-qrcode"></i> Instant Checkout & Generate QR Ticket
+            </button>
+        </form>
+    </div>
+
+    <!-- Live Fare & Summary Sidebar -->
+    <div>
+        <div class="card" style="padding: 24px; border-radius: 16px; position: sticky; top: 24px; background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.95)); border: 1px solid var(--border-color);">
+            <div style="font-size: 0.8rem; text-transform: uppercase; color: var(--accent-teal); font-weight: 700; letter-spacing: 1px; margin-bottom: 12px;">Fare Breakdown</div>
+            <div style="font-size: 2.2rem; font-weight: 900; color: #fff; margin-bottom: 4px;" id="fareTotal">$2.50</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">Includes all metropolitan transit taxes & fees</div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-bottom: 20px; font-size: 0.88rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: var(--text-muted);">Pass Category:</span>
+                    <strong style="color: #fff;" id="summaryPassType">Single Trip</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: var(--text-muted);">Digital Ticket:</span>
+                    <strong style="color: var(--accent-teal);">QR Code Enabled</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="color: var(--text-muted);">Validation Window:</span>
+                    <span style="color: #fff;" id="summaryValidity">2 Hours</span>
+                </div>
+            </div>
+
+            <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 10px; padding: 14px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                <i class="fas fa-shield-halved" style="color: var(--accent-blue); margin-right: 6px;"></i>
+                Instant electronic issuance. Scan QR gate code at turnstiles or present to transit inspector on board.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const lineStops = {{ lines_stops_data|safe }};
+const fareMap = {
+    'single': { price: '$2.50', validity: '2 Hours', name: 'Single Trip' },
+    'return': { price: '$4.50', validity: '24 Hours', name: 'Return Trip' },
+    'day': { price: '$7.00', validity: '1 Day', name: 'Day Pass' },
+    'weekly': { price: '$25.00', validity: '7 Days', name: 'Weekly Pass' },
+    'monthly': { price: '$80.00', validity: '30 Days', name: 'Monthly Pass' }
+};
+
+const lineSelect = document.getElementById('lineSelect');
+const originSelect = document.getElementById('originStopSelect');
+const destSelect = document.getElementById('destinationStopSelect');
+
+function populateStops(lineId) {
+    originSelect.innerHTML = '<option value="">-- Choose Origin Station --</option>';
+    destSelect.innerHTML = '<option value="">-- Choose Destination Station --</option>';
+
+    if (!lineId || !lineStops[lineId]) {
+        originSelect.disabled = true;
+        destSelect.disabled = true;
+        return;
+    }
+
+    const stops = lineStops[lineId];
+    stops.forEach((stop, index) => {
+        const opt1 = document.createElement('option');
+        opt1.value = stop.id;
+        opt1.textContent = `${index + 1}. ${stop.name} (Zone ${stop.zone})`;
+        originSelect.appendChild(opt1);
+
+        const opt2 = document.createElement('option');
+        opt2.value = stop.id;
+        opt2.textContent = `${index + 1}. ${stop.name} (Zone ${stop.zone})`;
+        destSelect.appendChild(opt2);
+    });
+
+    originSelect.disabled = false;
+    destSelect.disabled = false;
+
+    if (stops.length > 1) {
+        originSelect.selectedIndex = 1;
+        destSelect.selectedIndex = stops.length;
+    }
+}
+
+lineSelect.addEventListener('change', function() {
+    populateStops(this.value);
+});
+
+// URL param support
+const urlParams = new URLSearchParams(window.location.search);
+const preselectedLine = urlParams.get('line');
+if (preselectedLine) {
+    lineSelect.value = preselectedLine;
+    populateStops(preselectedLine);
+}
+
+function updateFare() {
+    const selectedRadio = document.querySelector('input[name="ticket_type"]:checked');
+    if (!selectedRadio) return;
+
+    const type = selectedRadio.value;
+    const config = fareMap[type];
+
+    document.getElementById('fareTotal').textContent = config.price;
+    document.getElementById('summaryPassType').textContent = config.name;
+    document.getElementById('summaryValidity').textContent = config.validity;
+
+    document.querySelectorAll('.ticket-type-card').forEach(card => {
+        const input = card.querySelector('input');
+        if (input && input.checked) {
+            card.style.borderColor = 'var(--accent-teal)';
+            card.style.background = 'rgba(20, 184, 166, 0.12)';
+        } else {
+            card.style.borderColor = 'var(--border-color)';
+            card.style.background = 'var(--bg-secondary)';
+        }
+    });
+}
+
+document.querySelectorAll('input[name="ticket_type"]').forEach(input => {
+    input.addEventListener('change', updateFare);
+});
+
+// Initial style trigger
+updateFare();
+</script>
+{% endblock %}
